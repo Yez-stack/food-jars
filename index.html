@@ -108,6 +108,29 @@
             transform: scale(0.98);
             box-shadow: none !important;
         }
+        .mobile-dragging {
+            opacity: 0.98 !important;
+            transform: scale(1.025);
+            box-shadow: 0 22px 45px rgba(15, 23, 42, 0.18) !important;
+            border-radius: 16px;
+            pointer-events: none;
+        }
+        .mobile-drag-placeholder {
+            background: rgba(99, 102, 241, 0.06);
+            border: 1.5px dashed rgba(99, 102, 241, 0.24);
+            border-radius: 16px;
+        }
+        #action-toast {
+            bottom: calc(76px + env(safe-area-inset-bottom));
+        }
+
+        @media (max-width: 768px) {
+            input,
+            select,
+            textarea {
+                font-size: 16px !important;
+            }
+        }
 
         /* 侧滑手势容器 */
         .swipe-container {
@@ -157,15 +180,9 @@
             + 添加
         </button>
     </header>
-    <!-- tab 栏跟着 header 一起固定，只在储备页显示 -->
+    <!-- 标签栏：新增入口跟随标签一起横向滑动 -->
     <div id="zone-tab-bar" class="px-4 pb-3 max-w-md mx-auto">
-        <div class="flex gap-1.5 overflow-x-auto no-scrollbar">
-            <button onclick="switchZone('all')" id="tab-zone-all" class="zone-tab px-3 py-1.5 rounded-full text-sm font-semibold bg-indigo-600 text-white whitespace-nowrap transition-all">全部</button>
-            <button onclick="switchZone('ingredient')" id="tab-zone-ingredient" class="zone-tab px-3 py-1.5 rounded-full text-sm font-medium bg-white text-slate-500 shadow-[0_2px_4px_rgba(0,0,0,0.01)] whitespace-nowrap transition-all">🥬 食材</button>
-            <button onclick="switchZone('condiment')" id="tab-zone-condiment" class="zone-tab px-3 py-1.5 rounded-full text-sm font-medium bg-white text-slate-500 shadow-[0_2px_4px_rgba(0,0,0,0.01)] whitespace-nowrap transition-all">🧂 调料</button>
-            <button onclick="switchZone('herb')" id="tab-zone-herb" class="zone-tab px-3 py-1.5 rounded-full text-sm font-medium bg-white text-slate-500 shadow-[0_2px_4px_rgba(0,0,0,0.01)] whitespace-nowrap transition-all">🌿 药材</button>
-            <button onclick="switchZone('breakfast')" id="tab-zone-breakfast" class="zone-tab px-3 py-1.5 rounded-full text-sm font-medium bg-white text-slate-500 shadow-[0_2px_4px_rgba(0,0,0,0.01)] whitespace-nowrap transition-all">🍳 早餐</button>
-        </div>
+        <div id="zone-tabs-container" class="flex gap-1.5 overflow-x-auto no-scrollbar"></div>
     </div>
     </div>
 
@@ -179,13 +196,13 @@
             <div class="bg-white p-4 rounded-2xl shadow-[0_12px_24px_-4px_rgba(0,0,0,0.035)] mb-4 border-0">
                 <p class="text-sm font-medium text-slate-400 mb-2">快速加入待办补货</p>
                 <div class="flex gap-2">
-                    <input type="text" id="quick-shopping-name" placeholder="输入物品名称，只需名字即可..." class="flex-1 bg-slate-50 border border-slate-200/40 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-indigo-500" onkeydown="if(event.key==='Enter'){event.preventDefault();addQuickShopping();}">
+                    <input type="text" id="quick-shopping-name" placeholder="输入物品名称，只需名字即可..." class="flex-1 bg-slate-50 border border-slate-200/40 rounded-xl px-3 py-2 text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:border-indigo-500" onkeydown="if(event.key==='Enter'){event.preventDefault();addQuickShopping();}">
                     <button onclick="addQuickShopping()" class="bg-indigo-600 text-white text-[14px] font-semibold px-4 py-2 rounded-xl shadow-sm">加入</button>
                 </div>
             </div>
 
-            <h2 class="text-l font-bold text-slate-400 mb-2.5 flex items-center gap-2 px-1 tracking-wider">
-                补货清单 <span id="shopping-count" class="bg-slate-200/60 text-slate-600 px-1.5 py-0.5 rounded-full font-bold text-[10px]">0</span>
+            <h2 class="text-[15px] font-bold text-slate-500 mb-2.5 flex items-center gap-2 px-1 tracking-wider">
+                补货清单 <span id="shopping-count" class="bg-slate-200/60 text-slate-600 px-1.5 py-0.5 rounded-full font-bold text-[11px]">0</span>
             </h2>
             <div id="shopping-container" class="space-y-3"></div>
         </div>
@@ -193,7 +210,7 @@
         <div id="page-stats" class="page-content hidden">
             <div class="mb-3 px-1 flex items-center justify-between">
                 <span class="text-[14px] text-slate-600 font-semibold" id="stats-week-label"></span>
-                <span class="text-[13px] text-slate-400 font-medium">每周一自动重置</span>
+                <span class="text-[13px] text-slate-400 font-medium">每周自动更新</span>
             </div>
             <div class="py-4 mb-4 flex flex-col items-center justify-center min-h-[330px]">
                 <div id="jar-stage" class="jar-stage flex flex-col items-center">
@@ -204,7 +221,7 @@
             </div>
 
             <div class="px-1 mb-3">
-                <h4 class="text-s font-bold text-slate-700 tracking-wider">
+                <h4 class="text-[15px] font-bold text-slate-700 tracking-wider">
                     本周消耗排行榜
                 </h4>
                 <p id="stats-summary-main" class="text-[12px] font-medium text-slate-400 mt-1">
@@ -234,8 +251,23 @@
         </button>
     </nav>
 
+    <div
+        id="action-toast"
+        class="fixed left-1/2 -translate-x-1/2 z-[90] w-[calc(100%-32px)] max-w-sm hidden opacity-0 translate-y-3 transition-all duration-200"
+    >
+        <div class="bg-slate-900/95 backdrop-blur-md text-white rounded-2xl px-4 py-3 shadow-2xl flex items-center justify-between gap-4">
+            <span id="action-toast-message" class="text-[14px] font-medium truncate"></span>
+            <button
+                id="action-toast-button"
+                type="button"
+                onclick="runToastAction()"
+                class="shrink-0 text-[14px] font-bold text-indigo-300 hidden"
+            >撤销</button>
+        </div>
+    </div>
+
     <!-- 已买到回填弹窗 -->
-    <div id="bought-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center hidden opacity-0 transition-all duration-200">
+    <div id="bought-modal" onclick="if(event.target===this) closeBoughtModal()" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center hidden opacity-0 transition-all duration-200">
         <div class="bg-white w-[80%] max-w-xs rounded-3xl p-5 shadow-2xl transform scale-95 transition-transform duration-200" id="bought-panel">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-lg font-bold text-slate-900">✅ 已买到</h3>
@@ -258,10 +290,99 @@
         </div>
     </div>
 
-    <div id="add-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center hidden opacity-0 transition-all duration-200">
+
+    <div id="category-modal" onclick="if(event.target===this) closeCategoryManager()" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[60] flex items-center justify-center hidden opacity-0 transition-all duration-200">
+        <div id="category-modal-panel" class="bg-white w-[88%] max-w-sm rounded-3xl p-5 shadow-2xl transform scale-95 transition-transform duration-200">
+            <div class="flex items-center justify-between mb-4">
+                <div>
+                    <h3 class="text-lg font-bold text-slate-900">分类管理</h3>
+                    <p class="text-[12px] text-slate-400 mt-0.5">用于首页筛选和物品归类</p>
+                </div>
+                <button type="button" onclick="closeCategoryManager()" class="w-10 h-10 flex items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 text-lg font-bold transition-all">✕</button>
+            </div>
+
+            <div id="category-list" class="space-y-2 max-h-56 overflow-y-auto pr-1"></div>
+
+            <div class="mt-4 pt-4 border-t border-slate-100">
+                <label class="block text-[12px] font-semibold text-slate-400 mb-2">新增分类</label>
+                <div class="flex gap-2 items-start">
+                    <div class="relative shrink-0">
+                        <button
+                            id="new-category-emoji-btn"
+                            type="button"
+                            onclick="toggleCategoryEmojiPicker(event)"
+                            class="w-14 h-11 text-center text-xl bg-slate-50 border border-slate-200/60 rounded-xl hover:bg-slate-100 focus:outline-none focus:border-indigo-500 transition-all"
+                        >📦</button>
+                        <input id="new-category-emoji" type="hidden" value="📦">
+
+                        <div
+                            id="category-emoji-picker"
+                            onclick="event.stopPropagation()"
+                            class="absolute left-0 bottom-[52px] bg-white border border-slate-100 rounded-2xl p-3 shadow-2xl z-[80] hidden"
+                            style="width:240px;max-height:280px;overflow-y:auto;"
+                        >
+                            <p class="text-[11px] text-slate-400 font-semibold mb-2 tracking-wider">常用分类图标</p>
+                            <div class="grid grid-cols-6 gap-1.5">
+                                <button type="button" onclick="selectCategoryEmoji('📦')" class="text-xl p-1.5 hover:bg-slate-100 rounded-lg">📦</button>
+                                <button type="button" onclick="selectCategoryEmoji('🥬')" class="text-xl p-1.5 hover:bg-slate-100 rounded-lg">🥬</button>
+                                <button type="button" onclick="selectCategoryEmoji('🍎')" class="text-xl p-1.5 hover:bg-slate-100 rounded-lg">🍎</button>
+                                <button type="button" onclick="selectCategoryEmoji('🧂')" class="text-xl p-1.5 hover:bg-slate-100 rounded-lg">🧂</button>
+                                <button type="button" onclick="selectCategoryEmoji('🌿')" class="text-xl p-1.5 hover:bg-slate-100 rounded-lg">🌿</button>
+                                <button type="button" onclick="selectCategoryEmoji('🍳')" class="text-xl p-1.5 hover:bg-slate-100 rounded-lg">🍳</button>
+                                <button type="button" onclick="selectCategoryEmoji('🥛')" class="text-xl p-1.5 hover:bg-slate-100 rounded-lg">🥛</button>
+                                <button type="button" onclick="selectCategoryEmoji('🍪')" class="text-xl p-1.5 hover:bg-slate-100 rounded-lg">🍪</button>
+                                <button type="button" onclick="selectCategoryEmoji('🧃')" class="text-xl p-1.5 hover:bg-slate-100 rounded-lg">🧃</button>
+                                <button type="button" onclick="selectCategoryEmoji('🧊')" class="text-xl p-1.5 hover:bg-slate-100 rounded-lg">🧊</button>
+                                <button type="button" onclick="selectCategoryEmoji('🧴')" class="text-xl p-1.5 hover:bg-slate-100 rounded-lg">🧴</button>
+                                <button type="button" onclick="selectCategoryEmoji('✂️')" class="text-xl p-1.5 hover:bg-slate-100 rounded-lg">✂️</button>
+                            </div>
+
+                            <div class="mt-3 pt-3 border-t border-slate-100">
+                                <p class="text-[11px] text-slate-400 font-semibold mb-2 tracking-wider">自定义表情</p>
+                                <div class="flex gap-2">
+                                    <input
+                                        id="category-custom-emoji-input"
+                                        type="text"
+                                        maxlength="8"
+                                        placeholder="输入表情"
+                                        class="min-w-0 flex-1 h-9 bg-slate-50 border border-slate-200/60 rounded-lg px-2.5 text-lg text-slate-700 placeholder:text-slate-400 text-center focus:outline-none focus:border-indigo-400"
+                                        onkeydown="if(event.key==='Enter'){event.preventDefault();applyCategoryCustomEmoji();}"
+                                    >
+                                    <button
+                                        type="button"
+                                        onclick="applyCategoryCustomEmoji()"
+                                        class="h-9 px-3 rounded-lg bg-indigo-50 text-indigo-600 text-xs font-bold active:scale-95 transition-all"
+                                    >使用</button>
+                                </div>
+                                <button
+                                    type="button"
+                                    onclick="clearCategoryEmoji()"
+                                    class="w-full mt-2 h-8 rounded-lg bg-slate-50 text-slate-400 text-xs font-medium active:scale-95 transition-all"
+                                >恢复默认图标</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <input
+                        id="new-category-name"
+                        type="text"
+                        maxlength="8"
+                        placeholder="例如：水果"
+                        class="flex-1 min-w-0 h-11 bg-slate-50 border border-slate-200/60 rounded-xl px-3 text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:border-indigo-500"
+                        oninput="autoMatchCategoryEmoji(this.value)"
+                        onkeydown="if(event.key==='Enter'){event.preventDefault();addCategory();}"
+                    >
+                    <button type="button" onclick="addCategory()" class="h-11 px-4 rounded-xl bg-indigo-600 text-white text-sm font-bold active:scale-95 transition-all">添加</button>
+                </div>
+                <p id="category-error" class="text-[12px] text-rose-500 mt-2 hidden"></p>
+            </div>
+        </div>
+    </div>
+
+    <div id="add-modal" onclick="if(event.target===this) closeModal()" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center hidden opacity-0 transition-all duration-200">
         <div class="bg-white w-[88%] max-w-sm rounded-3xl p-5 shadow-2xl transform scale-95 transition-transform duration-200" id="modal-panel">
             <div class="flex justify-between items-center mb-4">
-                <h3 class="text-lg font-bold text-slate-900" id="modal-title">✨ 新增厨房储备</h3>
+                <h3 class="text-lg font-bold text-slate-900" id="modal-title">新增物品</h3>
                 <button onclick="closeModal()" class="w-10 h-10 flex items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 text-lg font-bold transition-all">✕</button>
             </div>
             
@@ -274,8 +395,8 @@
                         <button type="button" onclick="toggleEmojiPicker(event)" id="form-emoji-btn" class="w-full h-11 bg-slate-50 border border-slate-200/40 hover:bg-slate-100 rounded-xl flex items-center justify-center text-xl transition-all">📦</button>
                         <input type="hidden" id="form-emoji" value="📦">
                         
-                        <div id="emoji-picker" class="absolute left-0 top-16 bg-white border border-slate-100 rounded-2xl p-3 shadow-2xl z-50 hidden" style="width:220px;max-height:240px;overflow-y:auto;">
-                            <p class="text-[10px] text-slate-300 font-semibold mb-1.5 tracking-wider">蔬果</p>
+                        <div id="emoji-picker" onclick="event.stopPropagation()" class="absolute left-0 top-16 bg-white border border-slate-100 rounded-2xl p-3 shadow-2xl z-50 hidden" style="width:240px;max-height:300px;overflow-y:auto;">
+                            <p class="text-[11px] text-slate-400 font-semibold mb-1.5 tracking-wider">蔬果</p>
                             <div class="grid grid-cols-5 gap-1 mb-2">
                             <button type="button" onclick="selectCustomEmoji('🥬')" class="text-xl p-1 hover:bg-slate-100 rounded-lg">🥬</button>
                             <button type="button" onclick="selectCustomEmoji('🥦')" class="text-xl p-1 hover:bg-slate-100 rounded-lg">🥦</button>
@@ -293,7 +414,7 @@
                             <button type="button" onclick="selectCustomEmoji('🫑')" class="text-xl p-1 hover:bg-slate-100 rounded-lg">🫑</button>
                             <button type="button" onclick="selectCustomEmoji('🍄')" class="text-xl p-1 hover:bg-slate-100 rounded-lg">🍄</button>
                             </div>
-                            <p class="text-[10px] text-slate-300 font-semibold mb-1.5 tracking-wider">水果</p>
+                            <p class="text-[11px] text-slate-400 font-semibold mb-1.5 tracking-wider">水果</p>
                             <div class="grid grid-cols-5 gap-1 mb-2">
                             <button type="button" onclick="selectCustomEmoji('🍌')" class="text-xl p-1 hover:bg-slate-100 rounded-lg">🍌</button>
                             <button type="button" onclick="selectCustomEmoji('🍎')" class="text-xl p-1 hover:bg-slate-100 rounded-lg">🍎</button>
@@ -308,7 +429,7 @@
                             <button type="button" onclick="selectCustomEmoji('🍉')" class="text-xl p-1 hover:bg-slate-100 rounded-lg">🍉</button>
                             <button type="button" onclick="selectCustomEmoji('🥝')" class="text-xl p-1 hover:bg-slate-100 rounded-lg">🥝</button>
                             </div>
-                            <p class="text-[10px] text-slate-300 font-semibold mb-1.5 tracking-wider">肉蛋奶</p>
+                            <p class="text-[11px] text-slate-400 font-semibold mb-1.5 tracking-wider">肉蛋奶</p>
                             <div class="grid grid-cols-5 gap-1 mb-2">
                             <button type="button" onclick="selectCustomEmoji('🥩')" class="text-xl p-1 hover:bg-slate-100 rounded-lg">🥩</button>
                             <button type="button" onclick="selectCustomEmoji('🍗')" class="text-xl p-1 hover:bg-slate-100 rounded-lg">🍗</button>
@@ -323,7 +444,7 @@
                             <button type="button" onclick="selectCustomEmoji('🧀')" class="text-xl p-1 hover:bg-slate-100 rounded-lg">🧀</button>
                             <button type="button" onclick="selectCustomEmoji('🫀')" class="text-xl p-1 hover:bg-slate-100 rounded-lg">🥩</button>
                             </div>
-                            <p class="text-[10px] text-slate-300 font-semibold mb-1.5 tracking-wider">调料&饮品</p>
+                            <p class="text-[11px] text-slate-400 font-semibold mb-1.5 tracking-wider">调料&饮品</p>
                             <div class="grid grid-cols-5 gap-1 mb-2">
                             <button type="button" onclick="selectCustomEmoji('🧂')" class="text-xl p-1 hover:bg-slate-100 rounded-lg">🧂</button>
                             <button type="button" onclick="selectCustomEmoji('🍾')" class="text-xl p-1 hover:bg-slate-100 rounded-lg">🍾</button>
@@ -334,7 +455,7 @@
                             <button type="button" onclick="selectCustomEmoji('🧃')" class="text-xl p-1 hover:bg-slate-100 rounded-lg">🧃</button>
                             <button type="button" onclick="selectCustomEmoji('🥤')" class="text-xl p-1 hover:bg-slate-100 rounded-lg">🥤</button>
                             </div>
-                            <p class="text-[10px] text-slate-300 font-semibold mb-1.5 tracking-wider">药材&其他</p>
+                            <p class="text-[11px] text-slate-400 font-semibold mb-1.5 tracking-wider">药材&其他</p>
                             <div class="grid grid-cols-5 gap-1">
                             <button type="button" onclick="selectCustomEmoji('🌿')" class="text-xl p-1 hover:bg-slate-100 rounded-lg">🌿</button>
                             <button type="button" onclick="selectCustomEmoji('🍵')" class="text-xl p-1 hover:bg-slate-100 rounded-lg">🍵</button>
@@ -347,34 +468,41 @@
                             <button type="button" onclick="selectCustomEmoji('🧇')" class="text-xl p-1 hover:bg-slate-100 rounded-lg">🧇</button>
                             <button type="button" onclick="selectCustomEmoji('📦')" class="text-xl p-1 hover:bg-slate-100 rounded-lg">📦</button>
                             </div>
+
+                            <div class="mt-3 pt-3 border-t border-slate-100">
+                                <p class="text-[11px] text-slate-400 font-semibold mb-2 tracking-wider">自定义表情</p>
+                                <div class="flex gap-2">
+                                    <input
+                                        id="custom-emoji-input"
+                                        type="text"
+                                        maxlength="8"
+                                        placeholder="输入表情"
+                                        class="min-w-0 flex-1 h-9 bg-slate-50 border border-slate-200/60 rounded-lg px-2.5 text-lg text-slate-700 placeholder:text-slate-400 text-center focus:outline-none focus:border-indigo-400"
+                                        onkeydown="if(event.key==='Enter'){event.preventDefault();applyCustomEmoji();}"
+                                    >
+                                    <button
+                                        type="button"
+                                        onclick="applyCustomEmoji()"
+                                        class="h-9 px-3 rounded-lg bg-indigo-50 text-indigo-600 text-xs font-bold active:scale-95 transition-all"
+                                    >使用</button>
+                                </div>
+                                <button
+                                    type="button"
+                                    onclick="clearSelectedEmoji()"
+                                    class="w-full mt-2 h-8 rounded-lg bg-slate-50 text-slate-400 text-xs font-medium active:scale-95 transition-all"
+                                >清除当前图标</button>
+                            </div>
                         </div>
                     </div>
                     <div class="flex-1">
                         <label class="block text-[13px] font-semibold text-slate-400 mb-1.5">物品名称</label>
-                        <input type="text" id="form-name" required oninput="autoMatchEmoji(this.value)" placeholder="鸡蛋、冷藏鲜奶" class="w-full h-11 bg-slate-50 border border-slate-200/60 rounded-xl px-3 text-sm focus:outline-none focus:border-indigo-500 transition-all">
+                        <input type="text" id="form-name" required oninput="autoMatchEmoji(this.value)" placeholder="鸡蛋、冷藏鲜奶" class="w-full h-11 bg-slate-50 border border-slate-200/60 rounded-xl px-3 text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:border-indigo-500 transition-all">
                     </div>
                 </div>
 
                 <div>
-                    <label class="block text-[13px] font-semibold text-slate-400 mb-1.5">物品类别</label>
-                    <div class="grid grid-cols-2 gap-2">
-                        <label class="border border-indigo-100 bg-indigo-50/40 rounded-xl p-2.5 flex items-center justify-center gap-1.5 cursor-pointer" id="label-type-ingredient">
-                            <input type="radio" name="form-type" value="ingredient" checked onclick="toggleTypeFields('ingredient')" class="sr-only">
-                            <span class="text-sm font-bold text-indigo-600">🥬 食材</span>
-                        </label>
-                        <label class="border border-slate-200 bg-white rounded-xl p-2.5 flex items-center justify-center gap-1.5 cursor-pointer" id="label-type-condiment">
-                            <input type="radio" name="form-type" value="condiment" onclick="toggleTypeFields('condiment')" class="sr-only">
-                            <span class="text-sm font-medium text-slate-500">🧂 调料</span>
-                        </label>
-                        <label class="border border-slate-200 bg-white rounded-xl p-2.5 flex items-center justify-center gap-1.5 cursor-pointer" id="label-type-herb">
-                            <input type="radio" name="form-type" value="herb" onclick="toggleTypeFields('herb')" class="sr-only">
-                            <span class="text-sm font-medium text-slate-500">🌿 药材</span>
-                        </label>
-                        <label class="border border-slate-200 bg-white rounded-xl p-2.5 flex items-center justify-center gap-1.5 cursor-pointer" id="label-type-breakfast">
-                            <input type="radio" name="form-type" value="breakfast" onclick="toggleTypeFields('breakfast')" class="sr-only">
-                            <span class="text-sm font-medium text-slate-500">🍳 早餐</span>
-                        </label>
-                    </div>
+                    <label class="block text-[13px] font-semibold text-slate-400 mb-1.5">物品标签</label>
+                    <div id="form-type-options" class="grid grid-cols-2 gap-2"></div>
                 </div>
 
                 <div class="grid grid-cols-2 gap-2">
@@ -388,7 +516,7 @@
                     </div>
                     <div id="unit-box">
                         <label class="block text-[13px] font-semibold text-slate-400 mb-1.5">单位</label>
-                        <select id="form-quantity-unit" class="w-full bg-slate-50 border border-slate-200/60 rounded-xl pl-3 pr-8 py-2 text-sm focus:outline-none focus:border-indigo-500 appearance-none" style="-webkit-appearance:none;background-image:url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2212%22 height=%2212%22 viewBox=%220 0 12 12%22><path fill=%22%2394a3b8%22 d=%22M6 8L1 3h10z%22/></svg>');background-repeat:no-repeat;background-position:right 10px center;">
+                        <select id="form-quantity-unit" class="w-full bg-slate-50 border border-slate-200/60 rounded-xl pl-3 pr-8 py-2 text-sm text-slate-700 focus:outline-none focus:border-indigo-500 appearance-none" style="-webkit-appearance:none;background-image:url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2212%22 height=%2212%22 viewBox=%220 0 12 12%22><path fill=%22%2394a3b8%22 d=%22M6 8L1 3h10z%22/></svg>');background-repeat:no-repeat;background-position:right 10px center;">
                             <option value="个">个</option>
                             <option value="盒">盒</option>
                             <option value="瓶">瓶</option>
@@ -403,7 +531,7 @@
 
                 <div id="expiry-box">
                     <label class="block text-[13px] font-semibold text-slate-400 mb-1">到期时间</label>
-                    <input type="date" id="form-expiry" class="w-full bg-slate-50 border border-slate-200/60 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 box-border" style="max-width:100%;-webkit-appearance:none;">
+                    <input type="date" id="form-expiry" class="w-full bg-slate-50 border border-slate-200/60 rounded-xl px-3 py-2 text-sm text-slate-700 focus:outline-none focus:border-indigo-500 box-border" style="max-width:100%;-webkit-appearance:none;">
                 </div>
 
                 <div class="flex items-center gap-3 pt-4 border-t border-slate-50">
@@ -419,6 +547,13 @@
     </div>
 
     <script>
+        const defaultCategories = [
+            { id: 'ingredient', name: '食材', emoji: '🥬', trackExpiry: true },
+            { id: 'condiment', name: '调料', emoji: '🧂', trackExpiry: true },
+            { id: 'herb', name: '药材', emoji: '🌿', trackExpiry: true },
+            { id: 'breakfast', name: '早餐', emoji: '🍳', trackExpiry: true }
+        ];
+
         const defaultIngredients = [
             { id: 1, name: '鲜牛奶', emoji: '🥛', type: 'ingredient', quantity: 2, unit: '瓶', expiryDate: '2026-06-12' },
             { id: 2, name: '土鸡蛋', emoji: '🥚', type: 'ingredient', quantity: 12, unit: '个', expiryDate: '2026-06-25' },
@@ -483,18 +618,456 @@
             localStorage.setItem('fridge_weekKey', currentWeekKey);
         }
 
+        const savedCategories = JSON.parse(localStorage.getItem('fridge_categories') || 'null');
+        const initialCategories = (
+            Array.isArray(savedCategories) && savedCategories.length
+                ? savedCategories
+                : defaultCategories
+        ).map(category => ({
+            ...category,
+            trackExpiry: true
+        }));
+
         let state = {
             activePage: 'fridge',
             activeZone: 'all',
+            categories: initialCategories,
             ingredients: JSON.parse(localStorage.getItem('fridge_ingredients')) || defaultIngredients,
             shoppingList: JSON.parse(localStorage.getItem('fridge_shoppingList')) || defaultShoppingList,
             consumeHistory: JSON.parse(localStorage.getItem('fridge_consumeHistory')) || []
         };
 
+        const existingCategoryIds = new Set(state.categories.map(category => category.id));
+        const fallbackCategoryId = state.categories[0]?.id || 'ingredient';
+        state.ingredients = state.ingredients.map(item => ({
+            ...item,
+            type: existingCategoryIds.has(item.type) ? item.type : fallbackCategoryId
+        }));
+        state.shoppingList = state.shoppingList.map(item => ({
+            ...item,
+            type: existingCategoryIds.has(item.type) ? item.type : fallbackCategoryId
+        }));
+
         function saveStateToLocalStorage() {
+            localStorage.setItem('fridge_categories', JSON.stringify(state.categories));
             localStorage.setItem('fridge_ingredients', JSON.stringify(state.ingredients));
             localStorage.setItem('fridge_shoppingList', JSON.stringify(state.shoppingList));
             localStorage.setItem('fridge_consumeHistory', JSON.stringify(state.consumeHistory));
+        }
+
+        let actionToastTimer = null;
+        let actionToastCallback = null;
+
+        function hideActionToast() {
+            const toast = document.getElementById('action-toast');
+            if (!toast) return;
+
+            clearTimeout(actionToastTimer);
+            toast.classList.add('opacity-0', 'translate-y-3');
+            actionToastCallback = null;
+
+            setTimeout(() => {
+                toast.classList.add('hidden');
+            }, 200);
+        }
+
+        function showActionToast(message, actionLabel = '', actionCallback = null, duration = 3000) {
+            const toast = document.getElementById('action-toast');
+            const messageEl = document.getElementById('action-toast-message');
+            const buttonEl = document.getElementById('action-toast-button');
+            if (!toast || !messageEl || !buttonEl) return;
+
+            clearTimeout(actionToastTimer);
+            actionToastCallback = actionCallback;
+            messageEl.textContent = message;
+
+            if (actionLabel && typeof actionCallback === 'function') {
+                buttonEl.textContent = actionLabel;
+                buttonEl.classList.remove('hidden');
+            } else {
+                buttonEl.classList.add('hidden');
+            }
+
+            toast.classList.remove('hidden');
+            requestAnimationFrame(() => {
+                toast.classList.remove('opacity-0', 'translate-y-3');
+            });
+
+            actionToastTimer = setTimeout(hideActionToast, duration);
+        }
+
+        function runToastAction() {
+            const callback = actionToastCallback;
+            hideActionToast();
+            if (typeof callback === 'function') callback();
+        }
+
+        function getCategory(categoryId) {
+            return state.categories.find(category => category.id === categoryId) || state.categories[0];
+        }
+
+        function categoryTracksExpiry(categoryId) {
+            return Boolean(getCategory(categoryId)?.trackExpiry);
+        }
+
+        function renderZoneTabs() {
+            const container = document.getElementById('zone-tabs-container');
+            if (!container) return;
+
+            container.innerHTML = '';
+            const tabs = [{ id: 'all', name: '全部', emoji: '' }, ...state.categories];
+
+            tabs.forEach(category => {
+                const button = document.createElement('button');
+                const isActive = state.activeZone === category.id;
+                button.type = 'button';
+                button.className = isActive
+                    ? 'zone-tab shrink-0 px-3 py-1.5 rounded-full text-sm font-semibold bg-indigo-600 text-white whitespace-nowrap transition-all'
+                    : 'zone-tab shrink-0 px-3 py-1.5 rounded-full text-sm font-medium bg-white text-slate-500 shadow-[0_2px_4px_rgba(0,0,0,0.01)] whitespace-nowrap transition-all';
+                button.textContent = category.emoji ? `${category.emoji} ${category.name}` : category.name;
+                button.addEventListener('click', () => switchZone(category.id));
+                container.appendChild(button);
+            });
+
+            const addButton = document.createElement('button');
+            addButton.type = 'button';
+            addButton.setAttribute('aria-label', '新增分类');
+            addButton.className = 'zone-tab shrink-0 px-3 py-1.5 rounded-full text-sm font-medium bg-white text-slate-500 shadow-[0_2px_4px_rgba(0,0,0,0.01)] whitespace-nowrap active:scale-95 transition-all';
+            addButton.textContent = '＋ 新增';
+            addButton.addEventListener('click', openCategoryManager);
+            container.appendChild(addButton);
+        }
+
+        function renderFormTypeOptions(selectedType) {
+            const container = document.getElementById('form-type-options');
+            if (!container) return;
+
+            const validSelectedType = state.categories.some(category => category.id === selectedType)
+                ? selectedType
+                : state.categories[0]?.id;
+
+            container.innerHTML = '';
+
+            state.categories.forEach(category => {
+                const selected = category.id === validSelectedType;
+                const label = document.createElement('label');
+                label.className = selected
+                    ? 'border border-indigo-200 bg-indigo-50/50 rounded-xl p-2.5 flex items-center justify-center gap-1.5 cursor-pointer'
+                    : 'border border-slate-200 bg-white rounded-xl p-2.5 flex items-center justify-center gap-1.5 cursor-pointer';
+
+                const radio = document.createElement('input');
+                radio.type = 'radio';
+                radio.name = 'form-type';
+                radio.value = category.id;
+                radio.checked = selected;
+                radio.className = 'sr-only';
+                radio.addEventListener('change', () => {
+                    renderFormTypeOptions(category.id);
+                    toggleTypeFields(category.id);
+                });
+
+                const text = document.createElement('span');
+                text.className = selected
+                    ? 'text-sm font-bold text-indigo-600'
+                    : 'text-sm font-medium text-slate-500';
+                text.textContent = `${category.emoji} ${category.name}`;
+
+                label.appendChild(radio);
+                label.appendChild(text);
+                container.appendChild(label);
+            });
+
+            if (validSelectedType) toggleTypeFields(validSelectedType);
+        }
+
+        function showCategoryError(message) {
+            const error = document.getElementById('category-error');
+            if (!error) return;
+            error.textContent = message;
+            error.classList.remove('hidden');
+            clearTimeout(showCategoryError.timer);
+            showCategoryError.timer = setTimeout(() => error.classList.add('hidden'), 2200);
+        }
+
+        function openCategoryManager() {
+            const modal = document.getElementById('category-modal');
+            modal.classList.remove('hidden');
+
+            categoryEmojiManuallySelected = false;
+            updateCategoryEmojiField('📦', false);
+            document.getElementById('category-custom-emoji-input').value = '';
+            document.getElementById('category-emoji-picker').classList.add('hidden');
+
+            renderCategoryManager();
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                document.getElementById('category-modal-panel').classList.remove('scale-95');
+            }, 20);
+        }
+
+        function closeCategoryManager() {
+            const modal = document.getElementById('category-modal');
+            modal.classList.add('opacity-0');
+            document.getElementById('category-modal-panel').classList.add('scale-95');
+            setTimeout(() => modal.classList.add('hidden'), 180);
+        }
+
+        function renderCategoryManager() {
+            const container = document.getElementById('category-list');
+            if (!container) return;
+            container.innerHTML = '';
+
+            state.categories.forEach(category => {
+                const count = state.ingredients.filter(item => item.type === category.id).length;
+                const row = document.createElement('div');
+                row.className = 'flex items-center justify-between gap-3 bg-slate-50 rounded-2xl px-3 py-2.5';
+
+                const info = document.createElement('div');
+                info.className = 'flex items-center gap-2.5 min-w-0';
+
+                const emoji = document.createElement('span');
+                emoji.className = 'text-xl w-7 text-center';
+                emoji.textContent = category.emoji;
+
+                const textWrap = document.createElement('div');
+                textWrap.className = 'min-w-0';
+
+                const name = document.createElement('div');
+                name.className = 'text-sm font-bold text-slate-700 truncate';
+                name.textContent = category.name;
+
+                const countText = document.createElement('div');
+                countText.className = 'text-[12px] text-slate-400 mt-0.5';
+                countText.textContent = `${count} 个物品`;
+
+                textWrap.appendChild(name);
+                textWrap.appendChild(countText);
+                info.appendChild(emoji);
+                info.appendChild(textWrap);
+
+                const deleteButton = document.createElement('button');
+                deleteButton.type = 'button';
+                deleteButton.textContent = '删除';
+                deleteButton.disabled = state.categories.length <= 1;
+                deleteButton.className = deleteButton.disabled
+                    ? 'shrink-0 text-[12px] font-semibold text-slate-300 bg-slate-100 px-3 py-1.5 rounded-lg cursor-not-allowed'
+                    : 'shrink-0 text-[12px] font-semibold text-rose-500 bg-rose-50 px-3 py-1.5 rounded-lg active:scale-95 transition-all';
+
+                if (!deleteButton.disabled) {
+                    deleteButton.addEventListener('click', (event) => {
+                        event.stopPropagation();
+                        deleteCategory(category.id);
+                    });
+                }
+
+                row.appendChild(info);
+                row.appendChild(deleteButton);
+                container.appendChild(row);
+            });
+        }
+
+        let categoryEmojiManuallySelected = false;
+
+        const categoryEmojiDictionary = {
+            '水果': '🍎',
+            '果': '🍎',
+            '蔬菜': '🥬',
+            '菜': '🥬',
+            '调料': '🧂',
+            '香料': '🧂',
+            '药材': '🌿',
+            '早餐': '🍳',
+            '奶': '🥛',
+            '饮料': '🧃',
+            '零食': '🍪',
+            '冷冻': '🧊',
+            '冰箱': '🧊',
+            '清洁': '🧴',
+            '工具': '✂️'
+        };
+
+        function updateCategoryEmojiField(emoji, isManual = true) {
+            const value = (emoji || '').trim() || '📦';
+            document.getElementById('new-category-emoji').value = value;
+            document.getElementById('new-category-emoji-btn').innerText = value;
+            categoryEmojiManuallySelected = isManual;
+        }
+
+        function autoMatchCategoryEmoji(text) {
+            if (categoryEmojiManuallySelected) return;
+
+            let matched = '📦';
+            for (const key in categoryEmojiDictionary) {
+                if (text.includes(key)) {
+                    matched = categoryEmojiDictionary[key];
+                    break;
+                }
+            }
+            updateCategoryEmojiField(matched, false);
+        }
+
+        function toggleCategoryEmojiPicker(event) {
+            event.stopPropagation();
+
+            const picker = document.getElementById('category-emoji-picker');
+            const customInput = document.getElementById('category-custom-emoji-input');
+            const currentEmoji = document.getElementById('new-category-emoji').value || '📦';
+
+            customInput.value = currentEmoji === '📦' ? '' : currentEmoji;
+            picker.classList.toggle('hidden');
+
+            if (!picker.classList.contains('hidden')) {
+                setTimeout(() => customInput.focus(), 80);
+            }
+        }
+
+        function selectCategoryEmoji(emoji) {
+            updateCategoryEmojiField(emoji, true);
+            document.getElementById('category-custom-emoji-input').value = emoji;
+            document.getElementById('category-emoji-picker').classList.add('hidden');
+        }
+
+        function applyCategoryCustomEmoji() {
+            const input = document.getElementById('category-custom-emoji-input');
+            const emoji = input.value.trim();
+
+            if (!emoji) {
+                input.focus();
+                input.classList.add('border-rose-300');
+                setTimeout(() => input.classList.remove('border-rose-300'), 1200);
+                return;
+            }
+
+            updateCategoryEmojiField(emoji, true);
+            document.getElementById('category-emoji-picker').classList.add('hidden');
+        }
+
+        function clearCategoryEmoji() {
+            categoryEmojiManuallySelected = false;
+            updateCategoryEmojiField('📦', false);
+            document.getElementById('category-custom-emoji-input').value = '';
+            document.getElementById('category-emoji-picker').classList.add('hidden');
+
+            const name = document.getElementById('new-category-name').value;
+            if (name) autoMatchCategoryEmoji(name);
+        }
+
+        function addCategory() {
+            const emojiInput = document.getElementById('new-category-emoji');
+            const nameInput = document.getElementById('new-category-name');
+            const emoji = emojiInput.value.trim() || '📦';
+            const name = nameInput.value.trim();
+
+            if (!name) {
+                showCategoryError('请输入标签名称');
+                nameInput.focus();
+                return;
+            }
+
+            if (state.categories.some(category => category.name === name)) {
+                showCategoryError('已经有同名标签了');
+                return;
+            }
+
+            state.categories.push({
+                id: `custom_${Date.now()}`,
+                name,
+                emoji,
+                trackExpiry: true
+            });
+
+            saveStateToLocalStorage();
+            renderZoneTabs();
+            renderCategoryManager();
+
+            categoryEmojiManuallySelected = false;
+            updateCategoryEmojiField('📦', false);
+            document.getElementById('category-custom-emoji-input').value = '';
+            nameInput.value = '';
+            nameInput.focus();
+        }
+
+        function deleteCategory(categoryId) {
+            if (state.categories.length <= 1) {
+                showCategoryError('至少需要保留一个分类');
+                return;
+            }
+
+            const categoryIndex = state.categories.findIndex(item => item.id === categoryId);
+            if (categoryIndex < 0) return;
+
+            const removedCategory = state.categories[categoryIndex];
+            const fallback = state.categories[categoryIndex + 1]
+                || state.categories[categoryIndex - 1];
+
+            if (!fallback) {
+                showCategoryError('至少需要保留一个分类');
+                return;
+            }
+
+            const affectedIngredientIds = state.ingredients
+                .filter(item => item.type === categoryId)
+                .map(item => item.id);
+
+            const affectedShoppingIds = state.shoppingList
+                .filter(item => item.type === categoryId)
+                .map(item => item.id);
+
+            state.ingredients = state.ingredients.map(item => (
+                item.type === categoryId
+                    ? { ...item, type: fallback.id }
+                    : item
+            ));
+
+            state.shoppingList = state.shoppingList.map(item => (
+                item.type === categoryId
+                    ? { ...item, type: fallback.id }
+                    : item
+            ));
+
+            state.categories.splice(categoryIndex, 1);
+
+            if (state.activeZone === categoryId) {
+                state.activeZone = 'all';
+            }
+
+            saveStateToLocalStorage();
+            renderZoneTabs();
+            renderCategoryManager();
+            render();
+
+            const movedCount = affectedIngredientIds.length;
+            const toastMessage = movedCount > 0
+                ? `已删除“${removedCategory.name}”，${movedCount} 个物品移至“${fallback.name}”`
+                : `已删除“${removedCategory.name}”分类`;
+
+            showActionToast(toastMessage, '撤销', () => {
+                state.categories.splice(
+                    Math.min(categoryIndex, state.categories.length),
+                    0,
+                    removedCategory
+                );
+
+                const ingredientIdSet = new Set(affectedIngredientIds);
+                const shoppingIdSet = new Set(affectedShoppingIds);
+
+                state.ingredients = state.ingredients.map(item => (
+                    ingredientIdSet.has(item.id)
+                        ? { ...item, type: removedCategory.id }
+                        : item
+                ));
+
+                state.shoppingList = state.shoppingList.map(item => (
+                    shoppingIdSet.has(item.id)
+                        ? { ...item, type: removedCategory.id }
+                        : item
+                ));
+
+                saveStateToLocalStorage();
+                renderZoneTabs();
+                renderCategoryManager();
+                render();
+            });
         }
 
         function getCurrentWeekStats() {
@@ -528,32 +1101,75 @@
             return Object.values(weekMap).sort((a, b) => b.count - a.count);
         }
 
+        let emojiManuallySelected = false;
+
         const emojiDictionary = {
             '蛋': '🥚', '奶': '🥛', '肉': '🥩', '牛': '🥩', '鸡': '🍗', '鱼': '🐟', '酱': '🍾', '醋': '🍾', '油': '🛢️', '盐': '🧂', '椒': '🧂', '番茄': '🍅', '菜': '🥬', '米': '🌾', '菇': '🍄', '蕉': '🍌'
         };
 
+        function updateEmojiField(emoji, isManual = true) {
+            const value = (emoji || '').trim();
+            document.getElementById('form-emoji').value = value;
+            document.getElementById('form-emoji-btn').innerText = value || '＋';
+            emojiManuallySelected = isManual;
+        }
+
         function autoMatchEmoji(text) {
+            if (emojiManuallySelected) return;
+
             let matched = '📦';
             for (let key in emojiDictionary) {
-                if (text.includes(key)) { matched = emojiDictionary[key]; break; }
+                if (text.includes(key)) {
+                    matched = emojiDictionary[key];
+                    break;
+                }
             }
-            document.getElementById('form-emoji').value = matched;
-            document.getElementById('form-emoji-btn').innerText = matched;
+            updateEmojiField(matched, false);
         }
 
         function toggleEmojiPicker(e) {
             e.stopPropagation();
-            document.getElementById('emoji-picker').classList.toggle('hidden');
+            const picker = document.getElementById('emoji-picker');
+            const customInput = document.getElementById('custom-emoji-input');
+            customInput.value = document.getElementById('form-emoji').value || '';
+            picker.classList.toggle('hidden');
+
+            if (!picker.classList.contains('hidden')) {
+                setTimeout(() => customInput.focus(), 80);
+            }
         }
 
         function selectCustomEmoji(emoji) {
-            document.getElementById('form-emoji').value = emoji;
-            document.getElementById('form-emoji-btn').innerText = emoji;
+            updateEmojiField(emoji, true);
+            document.getElementById('custom-emoji-input').value = emoji;
+            document.getElementById('emoji-picker').classList.add('hidden');
+        }
+
+        function applyCustomEmoji() {
+            const input = document.getElementById('custom-emoji-input');
+            const emoji = input.value.trim();
+
+            if (!emoji) {
+                input.focus();
+                input.classList.add('border-rose-300');
+                setTimeout(() => input.classList.remove('border-rose-300'), 1200);
+                return;
+            }
+
+            updateEmojiField(emoji, true);
+            document.getElementById('emoji-picker').classList.add('hidden');
+        }
+
+        function clearSelectedEmoji() {
+            updateEmojiField('', true);
+            document.getElementById('custom-emoji-input').value = '';
             document.getElementById('emoji-picker').classList.add('hidden');
         }
 
         document.addEventListener('click', () => {
             document.getElementById('emoji-picker').classList.add('hidden');
+            const categoryPicker = document.getElementById('category-emoji-picker');
+            if (categoryPicker) categoryPicker.classList.add('hidden');
         });
 
         function switchPage(pageId) {
@@ -586,12 +1202,9 @@
         }
 
         function switchZone(zoneId) {
-            state.activeZone = zoneId;
-            document.querySelectorAll('.zone-tab').forEach(t => {
-                t.className = "zone-tab px-3 py-1.5 rounded-full text-sm font-medium bg-white text-slate-500 shadow-[0_2px_4px_rgba(0,0,0,0.01)] whitespace-nowrap transition-all";
-            });
-            const tabEl = document.getElementById(`tab-zone-${zoneId}`);
-            if (tabEl) tabEl.className = "zone-tab px-3 py-1.5 rounded-full text-sm font-semibold bg-indigo-600 text-white whitespace-nowrap transition-all";
+            const validZone = zoneId === 'all' || state.categories.some(category => category.id === zoneId);
+            state.activeZone = validZone ? zoneId : 'all';
+            renderZoneTabs();
             render();
         }
 
@@ -606,30 +1219,33 @@
 
             if (editId) {
                 delBtn.classList.remove('hidden');
-                document.getElementById('modal-title').innerText = "✏️ 编辑储备物品";
+                document.getElementById('modal-title').innerText = "编辑物品";
                 const item = state.ingredients.find(i => i.id === editId);
                 document.getElementById('form-id').value = item.id;
                 document.getElementById('form-name').value = item.name;
-                document.getElementById('form-emoji').value = item.emoji;
-                document.getElementById('form-emoji-btn').innerText = item.emoji;
+                emojiManuallySelected = true;
+                updateEmojiField(item.emoji || '', true);
+                document.getElementById('custom-emoji-input').value = item.emoji || '';
                 
-                const editType = item.type || 'ingredient';
-                const radioEl = document.querySelector('input[name="form-type"][value="' + editType + '"]');
-                if (radioEl) radioEl.checked = true;
-                toggleTypeFields(editType);
+                const editType = item.type || state.categories[0]?.id;
+                renderFormTypeOptions(editType);
                 document.getElementById('form-quantity-num').value = item.quantity;
                 document.getElementById('form-quantity-unit').value = item.unit || '无单位';
                 document.getElementById('form-expiry').value = item.expiryDate || '';
             } else {
                 delBtn.classList.add('hidden');
-                document.getElementById('modal-title').innerText = "✨ 新增厨房储备";
+                document.getElementById('modal-title').innerText = "新增物品";
                 document.getElementById('form-id').value = '';
                 document.getElementById('form-name').value = '';
-                document.getElementById('form-emoji').value = '📦';
-                document.getElementById('form-emoji-btn').innerText = '📦';
+                emojiManuallySelected = false;
+                updateEmojiField('📦', false);
+                document.getElementById('custom-emoji-input').value = '';
                 document.getElementById('form-quantity-num').value = '1';
-                document.querySelector('input[name="form-type"][value="ingredient"]').checked = true;
-                toggleTypeFields('ingredient');
+                const defaultType = state.activeZone !== 'all'
+                    && state.categories.some(category => category.id === state.activeZone)
+                    ? state.activeZone
+                    : state.categories[0]?.id;
+                renderFormTypeOptions(defaultType);
                 
                 const weekLater = new Date();
                 weekLater.setDate(weekLater.getDate() + 7);
@@ -645,32 +1261,18 @@
         }
 
         function toggleTypeFields(type) {
-            ['ingredient','condiment','herb','breakfast'].forEach(t => {
-                const el = document.getElementById('label-type-' + t);
-                if (!el) return;
-                if (t === type) {
-                    el.className = "border border-indigo-200 bg-indigo-50/40 rounded-xl p-2.5 flex items-center justify-center gap-1.5 cursor-pointer text-indigo-700 font-bold flex-1";
-                    el.querySelector('span').classList.replace('text-slate-500','text-indigo-600');
-                } else {
-                    el.className = "border border-slate-200 bg-white rounded-xl p-2.5 flex items-center justify-center gap-1.5 cursor-pointer text-slate-500 flex-1";
-                    el.querySelector('span').classList.replace('text-indigo-600','text-slate-500');
-                }
-            });
             const unitBox = document.getElementById('unit-box');
             const expiryBox = document.getElementById('expiry-box');
-            if (type === 'ingredient') {
-                unitBox.classList.remove('invisible');
-                expiryBox.classList.remove('hidden');
-            } else {
-                unitBox.classList.add('invisible');
-                expiryBox.classList.add('hidden');
-            }
+
+            // 所有物品分类都统一填写单位和到期时间
+            unitBox.classList.remove('invisible');
+            expiryBox.classList.remove('hidden');
         }
 
         function saveIngredient() {
             const id = document.getElementById('form-id').value;
             const checkedRadio = document.querySelector('input[name="form-type"]:checked');
-            const type = checkedRadio ? checkedRadio.value : 'ingredient';
+            const type = checkedRadio ? checkedRadio.value : state.categories[0]?.id;
             const name = document.getElementById('form-name').value.trim();
             if (!name) {
                 document.getElementById('form-name').focus();
@@ -678,12 +1280,12 @@
                 setTimeout(() => document.getElementById('form-name').style.borderColor = '', 1500);
                 return;
             }
-            const emoji = document.getElementById('form-emoji').value;
+            const emoji = document.getElementById('form-emoji').value.trim() || '📦';
             const quantity = parseInt(document.getElementById('form-quantity-num').value) || 0;
             
             let unit = document.getElementById('form-quantity-unit').value;
-            if (unit === '无单位' || type === 'condiment') unit = '';
-            const expiryDate = (type === 'ingredient') ? document.getElementById('form-expiry').value : null;
+            if (unit === '无单位') unit = '';
+            const expiryDate = document.getElementById('form-expiry').value || null;
 
             if (id) {
                 state.ingredients = state.ingredients.map(i => i.id == id ? { ...i, name, emoji, type, quantity, unit, expiryDate } : i);
@@ -697,12 +1299,28 @@
 
         function handleModalDelete() {
             const id = parseInt(document.getElementById('form-id').value);
-            if (id) {
-                state.ingredients = state.ingredients.filter(i => i.id !== id);
-                closeModal();
+            if (!id) return;
+            closeModal();
+            deleteIngredient(id);
+        }
+
+        function deleteIngredient(id, event) {
+            if (event) event.stopPropagation();
+
+            const index = state.ingredients.findIndex(item => item.id === id);
+            if (index < 0) return;
+
+            const removedItem = state.ingredients[index];
+            state.ingredients.splice(index, 1);
+            saveStateToLocalStorage();
+            render();
+
+            showActionToast(`已删除${removedItem.name}`, '撤销', () => {
+                const restoreIndex = Math.min(index, state.ingredients.length);
+                state.ingredients.splice(restoreIndex, 0, removedItem);
                 saveStateToLocalStorage();
                 render();
-            }
+            });
         }
 
         function handleMinus(id, event) {
@@ -727,7 +1345,7 @@
         function handlePlusOrShopping(item, event) {
             event.stopPropagation();
             if (item.quantity === 0) {
-                if (!state.shoppingList.some(s => s.name === item.name)) {
+                if (!state.shoppingList.some(s => normalizeItemName(s.name) === normalizeItemName(item.name))) {
                     state.shoppingList.push({ id: Date.now(), name: item.name, emoji: item.emoji, type: item.type || 'ingredient', unit: item.unit || '个' });
                 }
                 state.ingredients = state.ingredients.filter(i => i.id !== item.id);
@@ -738,14 +1356,35 @@
             render();
         }
 
+        function normalizeItemName(name) {
+            return String(name || '').trim().replace(/\s+/g, '').toLocaleLowerCase();
+        }
+
         function addQuickShopping() {
             const input = document.getElementById('quick-shopping-name');
             const name = input.value.trim();
             if (!name) return;
+
+            const normalizedName = normalizeItemName(name);
+            const alreadyExists = state.shoppingList.some(item => (
+                normalizeItemName(item.name) === normalizedName
+            ));
+
+            if (alreadyExists) {
+                showActionToast('采购单里已经有了');
+                input.focus();
+                input.select();
+                return;
+            }
+
             let matched = '🛒';
             for (let key in emojiDictionary) {
-                if (name.includes(key)) { matched = emojiDictionary[key]; break; }
+                if (name.includes(key)) {
+                    matched = emojiDictionary[key];
+                    break;
+                }
             }
+
             state.shoppingList.push({ id: Date.now(), name, emoji: matched });
             input.value = '';
             saveStateToLocalStorage();
@@ -754,9 +1393,21 @@
 
         function deleteShoppingItem(id, event) {
             if (event) event.stopPropagation();
-            state.shoppingList = state.shoppingList.filter(item => item.id !== id);
+
+            const index = state.shoppingList.findIndex(item => item.id === id);
+            if (index < 0) return;
+
+            const removedItem = state.shoppingList[index];
+            state.shoppingList.splice(index, 1);
             saveStateToLocalStorage();
             render();
+
+            showActionToast(`已删除${removedItem.name}`, '撤销', () => {
+                const restoreIndex = Math.min(index, state.shoppingList.length);
+                state.shoppingList.splice(restoreIndex, 0, removedItem);
+                saveStateToLocalStorage();
+                render();
+            });
         }
 
         let _boughtId = null;
@@ -1157,35 +1808,195 @@
             jarAnimationFrame = requestAnimationFrame(frame);
         }
 
-        let touchStartX = 0;
-        let isMovingGesture = false; 
+        let isMovingGesture = false;
+        let mobileDragSession = null;
+
+        function beginMobileCardDrag(rowEl, touch, onDrop) {
+            const container = document.getElementById('ingredients-container');
+            if (!container || !container.contains(rowEl)) return;
+
+            const rect = rowEl.getBoundingClientRect();
+            const placeholder = document.createElement('div');
+            placeholder.className = 'mobile-drag-placeholder';
+            placeholder.style.height = `${rect.height}px`;
+
+            container.insertBefore(placeholder, rowEl);
+            document.body.appendChild(rowEl);
+
+            rowEl.classList.add('mobile-dragging');
+            rowEl.querySelector('.swipe-content').style.transform = 'translateX(0px)';
+
+            Object.assign(rowEl.style, {
+                position: 'fixed',
+                left: `${rect.left}px`,
+                top: `${rect.top}px`,
+                width: `${rect.width}px`,
+                height: `${rect.height}px`,
+                zIndex: '100',
+                margin: '0',
+                transition: 'none',
+                touchAction: 'none'
+            });
+
+            mobileDragSession = {
+                rowEl,
+                container,
+                placeholder,
+                onDrop,
+                offsetY: touch.clientY - rect.top
+            };
+
+            if (navigator.vibrate) navigator.vibrate(8);
+        }
+
+        function moveMobileCardDrag(touch) {
+            if (!mobileDragSession) return;
+
+            const { rowEl, container, placeholder, offsetY } = mobileDragSession;
+            const nextTop = Math.max(
+                8,
+                Math.min(window.innerHeight - rowEl.offsetHeight - 8, touch.clientY - offsetY)
+            );
+            rowEl.style.top = `${nextTop}px`;
+
+            const siblings = [
+                ...container.querySelectorAll('.swipe-container')
+            ];
+
+            const nextSibling = siblings.find(sibling => (
+                touch.clientY
+                    < sibling.getBoundingClientRect().top
+                    + sibling.getBoundingClientRect().height / 2
+            ));
+
+            container.insertBefore(placeholder, nextSibling || null);
+
+            if (touch.clientY < 90) {
+                window.scrollBy(0, -8);
+            } else if (touch.clientY > window.innerHeight - 110) {
+                window.scrollBy(0, 8);
+            }
+        }
+
+        function endMobileCardDrag() {
+            if (!mobileDragSession) return;
+
+            const { rowEl, container, placeholder, onDrop } = mobileDragSession;
+            container.insertBefore(rowEl, placeholder);
+            placeholder.remove();
+
+            rowEl.classList.remove('mobile-dragging');
+            rowEl.removeAttribute('style');
+            mobileDragSession = null;
+
+            requestAnimationFrame(() => {
+                if (typeof onDrop === 'function') onDrop();
+            });
+
+            setTimeout(() => {
+                isMovingGesture = false;
+            }, 180);
+        }
 
         function bindSwipeAndDragEvents(rowEl, id, isFridgePage = true) {
             const contentEl = rowEl.querySelector('.swipe-content');
-            if(!contentEl) return;
-            
-            rowEl.addEventListener('touchstart', (e) => {
-                touchStartX = e.touches[0].clientX;
-                isMovingGesture = false; 
-            }, {passive: true});
+            if (!contentEl) return;
 
-            rowEl.addEventListener('touchmove', (e) => {
-                let moveX = e.touches[0].clientX - touchStartX;
-                if (Math.abs(moveX) > 8) isMovingGesture = true;
+            let startX = 0;
+            let startY = 0;
+            let gestureMode = 'idle';
+            let longPressTimer = null;
 
-                if (moveX < -8) { 
-                    contentEl.style.transform = `translateX(${Math.max(-80, moveX)}px)`;
-                } else if (moveX > 8) { 
-                    contentEl.style.transform = 'translateX(0px)';
+            const clearLongPress = () => {
+                clearTimeout(longPressTimer);
+                longPressTimer = null;
+            };
+
+            rowEl.addEventListener('touchstart', (event) => {
+                if (event.touches.length !== 1) return;
+                if (event.target.closest('button, input, select, textarea')) return;
+
+                const touch = event.touches[0];
+                startX = touch.clientX;
+                startY = touch.clientY;
+                gestureMode = 'pending';
+                isMovingGesture = false;
+
+                if (isFridgePage) {
+                    longPressTimer = setTimeout(() => {
+                        gestureMode = 'drag';
+                        isMovingGesture = true;
+                        beginMobileCardDrag(rowEl, touch, reorderStateIngredients);
+                    }, 320);
                 }
-            }, {passive: true});
+            }, { passive: true });
 
-            rowEl.addEventListener('touchend', (e) => {
-                let finalMoveX = e.changedTouches[0].clientX - touchStartX;
-                if (finalMoveX < -40) { contentEl.style.transform = 'translateX(-80px)'; } 
-                else { contentEl.style.transform = 'translateX(0px)'; }
-                setTimeout(() => { if(finalMoveX === 0) isMovingGesture = false; }, 30);
-            }, {passive: true});
+            rowEl.addEventListener('touchmove', (event) => {
+                if (event.touches.length !== 1) return;
+
+                const touch = event.touches[0];
+
+                if (gestureMode === 'drag' && mobileDragSession?.rowEl === rowEl) {
+                    event.preventDefault();
+                    moveMobileCardDrag(touch);
+                    return;
+                }
+
+                const moveX = touch.clientX - startX;
+                const moveY = touch.clientY - startY;
+
+                if (Math.abs(moveX) > 7 || Math.abs(moveY) > 7) {
+                    clearLongPress();
+                }
+
+                if (
+                    Math.abs(moveX) > 9
+                    && Math.abs(moveX) > Math.abs(moveY) * 1.15
+                ) {
+                    gestureMode = 'swipe';
+                    isMovingGesture = true;
+                    event.preventDefault();
+
+                    if (moveX < 0) {
+                        contentEl.style.transform = `translateX(${Math.max(-80, moveX)}px)`;
+                    } else {
+                        contentEl.style.transform = 'translateX(0px)';
+                    }
+                } else if (Math.abs(moveY) > 9) {
+                    gestureMode = 'scroll';
+                }
+            }, { passive: false });
+
+            rowEl.addEventListener('touchend', (event) => {
+                clearLongPress();
+
+                if (gestureMode === 'drag' && mobileDragSession?.rowEl === rowEl) {
+                    endMobileCardDrag();
+                    return;
+                }
+
+                if (gestureMode === 'swipe') {
+                    const finalMoveX = event.changedTouches[0].clientX - startX;
+                    contentEl.style.transform = finalMoveX < -40
+                        ? 'translateX(-80px)'
+                        : 'translateX(0px)';
+                }
+
+                setTimeout(() => {
+                    isMovingGesture = false;
+                }, 80);
+            }, { passive: true });
+
+            rowEl.addEventListener('touchcancel', () => {
+                clearLongPress();
+
+                if (gestureMode === 'drag' && mobileDragSession?.rowEl === rowEl) {
+                    endMobileCardDrag();
+                } else {
+                    contentEl.style.transform = 'translateX(0px)';
+                    isMovingGesture = false;
+                }
+            }, { passive: true });
 
             if (isFridgePage) {
                 rowEl.addEventListener('dragstart', () => rowEl.classList.add('dragging'));
@@ -1198,16 +2009,25 @@
 
         const initDragContainer = (containerId = 'ingredients-container') => {
             const container = document.getElementById(containerId);
-            if(!container) return;
-            container.addEventListener('dragover', (e) => {
-                e.preventDefault();
+            if (!container || container.dataset.dragBound === 'true') return;
+
+            container.dataset.dragBound = 'true';
+            container.addEventListener('dragover', (event) => {
+                event.preventDefault();
+
                 const draggingItem = document.querySelector('.dragging');
-                if(!draggingItem) return;
-                const siblings = [...container.querySelectorAll('.swipe-container:not(.dragging)')];
-                let nextSibling = siblings.find(sibling => {
-                    return e.clientY <= sibling.getBoundingClientRect().top + sibling.getBoundingClientRect().height / 2;
-                });
-                container.insertBefore(draggingItem, nextSibling);
+                if (!draggingItem || !container.contains(draggingItem)) return;
+
+                const siblings = [
+                    ...container.querySelectorAll('.swipe-container:not(.dragging)')
+                ];
+
+                const nextSibling = siblings.find(sibling => (
+                    event.clientY <= sibling.getBoundingClientRect().top
+                        + sibling.getBoundingClientRect().height / 2
+                ));
+
+                container.insertBefore(draggingItem, nextSibling || null);
             });
         };
 
@@ -1265,6 +2085,8 @@
         }
 
         function render() {
+            renderZoneTabs();
+
             const bShopping = document.getElementById('badge-shopping');
             if (state.shoppingList.length > 0) {
                 bShopping.innerText = state.shoppingList.length; bShopping.classList.remove('scale-0');
@@ -1274,7 +2096,7 @@
             // 过期角标：有食材3天内过期或已过期则显示
             const bExpiry = document.getElementById('badge-expiry');
             const hasUrgent = state.ingredients.some(i => {
-                if (i.type !== 'ingredient') return false;
+                if (!categoryTracksExpiry(i.type) || !i.expiryDate) return false;
                 const d = calculateDaysLeft(i.expiryDate);
                 return d !== null && d <= 3;
             });
@@ -1292,7 +2114,7 @@
                 // 过期排序：已过期 → 快过期(≤3天) → 正常 → 调料/药材/早餐
                 filtered = [...filtered].sort((a, b) => {
                     const priority = (item) => {
-                        if (['condiment','herb','breakfast'].includes(item.type)) return 3;
+                        if (!categoryTracksExpiry(item.type) || !item.expiryDate) return 3;
                         const d = calculateDaysLeft(item.expiryDate);
                         if (d <= 0) return 0;
                         if (d <= 3) return 1;
@@ -1323,13 +2145,16 @@
                     let colorClass = "bg-emerald-500";
                     let textAlert = `剩 ${calculateDaysLeft(item.expiryDate)} 天`;
                     
-                    const typeLabels = { condiment: '厨房调料', herb: '养生药材', breakfast: '早餐食材' };
-                    if (item.type === 'ingredient') {
+                    const category = getCategory(item.type);
+                    const tracksExpiry = categoryTracksExpiry(item.type);
+                    if (tracksExpiry && item.expiryDate) {
                         const days = calculateDaysLeft(item.expiryDate);
                         if (days <= 0) { colorClass = "bg-rose-500"; textAlert = "已过期"; }
                         else if (days <= 3) { colorClass = "bg-amber-500"; textAlert = `${days}天内过期`; }
-                    } else if (typeLabels[item.type]) {
-                        colorClass = "bg-indigo-400"; textAlert = typeLabels[item.type];
+                        else { colorClass = "bg-emerald-500"; textAlert = `剩 ${days} 天`; }
+                    } else {
+                        colorClass = "bg-indigo-400";
+                        textAlert = category ? `${category.emoji} ${category.name}` : '未分类';
                     }
 
                     const wrap = document.createElement('div');
@@ -1339,7 +2164,7 @@
                     
                     wrap.innerHTML = `
                         <div class="swipe-back flex items-center justify-center bg-rose-500">
-                            <button onclick="event.stopPropagation(); state.ingredients = state.ingredients.filter(i=>i.id!==${item.id}); saveStateToLocalStorage(); render();" class="w-full h-full text-white text-[14px] font-bold rounded-2xl">删除</button>
+                            <button onclick="deleteIngredient(${item.id}, event)" class="w-full h-full text-white text-[14px] font-bold rounded-2xl">删除</button>
                         </div>
                         <div class="swipe-content bg-white shadow-[0_10px_20px_rgba(0,0,0,0.025),0_3px_8px_rgba(0,0,0,0.015)] flex justify-between items-center transition-transform cursor-grab active:cursor-grabbing border-0">
                             <div class="flex items-center gap-3 p-4 flex-1" id="touch-target-${item.id}">
@@ -1404,7 +2229,7 @@
                         <div class="swipe-content bg-white p-4 shadow-[0_10px_20px_rgba(0,0,0,0.025)] flex justify-between items-center border-0">
                             <div class="flex items-center gap-3">
                                 <div class="emoji-wrapper text-xl w-6 h-6 flex items-center justify-center">${item.emoji}</div>
-                                <span class="text-m font-bold text-slate-800">${item.name}</span>
+                                <span class="text-base font-bold text-slate-800">${item.name}</span>
                             </div>
                             <button onclick="handleBought(${item.id}, event)" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-600 text-sm font-bold px-3 py-1.5 rounded-lg z-10">
                                 ✓ 已买到
@@ -1467,6 +2292,7 @@
             }
         }
 
+        saveStateToLocalStorage();
         render();
     </script>
 </body>
